@@ -1,3 +1,14 @@
+#How to Install
+Grab a copy of the latest ProcessWire. Replace the install, modules and templates directories with those in this profile, as shown below:
+
+/site-default/install/  
+/site-default/modules/  
+/site-default/templates/  
+
+That is all there is to do. Install ProcessWire as per the instructions included with it and it will install the blog profile automatically.
+
+---
+
 #delegate profile
 
 Basically the home & basic-page template have the same fields. 
