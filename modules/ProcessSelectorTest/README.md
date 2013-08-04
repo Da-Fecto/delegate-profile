@@ -17,6 +17,11 @@ selectors without editing a template file or a bootstrapped script.
 
 ## Changelog
 
+**1.11 / 2013-02-07**
+
+* Added: all field and template data shown + cached at template level
+* Added: fields inside a fieldset are wrapped into a new subtree (page data only - fields inside a template are in a flat list)
+
 **1.1 / 2012-11-10**
 
 * Explore properties and data of matching pages in a tree view
@@ -34,6 +39,6 @@ selectors without editing a template file or a bootstrapped script.
 * Add pagination
 
 ------
-SelectorTest Copyright 2012 Niklas Lakanen
+SelectorTest Copyright 2012, 2013 Niklas Lakanen
 
 jqTree (https://github.com/mbraak/jqTree) Copyright 2012 Marco Braak

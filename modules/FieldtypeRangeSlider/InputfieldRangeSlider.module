@@ -1,0 +1,148 @@
+<?php
+
+/**
+ * ProcessWire Range Slider Inputfieldtype
+ * by "Soma" Philipp Urlich
+ *
+ * ProcessWire 2.x
+ * Copyright (C) 2010 by Ryan Cramer
+ * Licensed under GNU/GPL v2, see LICENSE.TXT
+ *
+ * http://www.processwire.com
+ * http://www.ryancramer.com
+ *
+ */
+
+class InputfieldRangeSlider extends Inputfield {
+
+	public static function getModuleInfo() {
+		return array(
+			'title' => __('Integer Range Slider', __FILE__), // Module Title
+			'summary' => __('Simple jQuery UI integer range slider that can be configured.', __FILE__), // Module Summary
+			'version' => 103,
+			'requires' => array("FieldtypeRangeSlider")
+		);
+	}
+
+	public function __construct() {
+		require_once(dirname(__FILE__) . '/RangeSlider.php');
+		parent::__construct();
+	}
+
+	public function init() {
+		return parent::init();
+	}
+
+	public function setAttribute($key, $value) {
+
+		if($key == 'value' && !$value instanceof RangeSlider && !is_null($value)) {
+			throw new WireException("This input only accepts a RangeSlider for it's value");
+		}
+
+		return parent::setAttribute($key, $value);
+	}
+
+	public function ___render() {
+
+		$out = '';
+
+		// config
+		$min = $this->minValue;
+		$max = $this->maxValue;
+		$range = $this->isrange ? 'range: true,' : '';
+		$value = $this->attr('value');
+
+
+		if($this->isrange) $display = "<span id='RangeSlider_{$this->name}_display1'></span> – <span id='RangeSlider_{$this->name}_display2'>0</span>";
+			else $display = "<span id='RangeSlider_{$this->name}_display1'>0</span>";
+
+		$out .= "<div class='RangeSlider RangeSlider_$this->name' id='RangeSlider_$this->name'>$display<div></div></div>";
+
+		if($this->isrange) {
+			$out .= "<input type='hidden' name='{$this->name}' id='Inputfield_" . $this->name . "1' value='" . $value->min . "'/>";
+			$out .= "<input type='hidden' name='{$this->name}_max' id='Inputfield_" . $this->name . "2' value='" . $value->max . "'/>";
+
+			$display = "$( '#RangeSlider_{$this->name}_display1' ).text( '$this->prefix' + ui.values[0] + '$this->suffix');";
+			$display .= "$( '#RangeSlider_{$this->name}_display2' ).text( '$this->prefix' + ui.values[1] + '$this->suffix');";
+
+			$constrain = "$( '#Inputfield_{$this->name}1' ).val( ui.values[0] );";
+			$constrain .= "$( '#Inputfield_{$this->name}2' ).val( ui.values[1] );";
+			// for change event checks
+			$constrain .= "$( '#Inputfield_{$this->name}1' ).trigger( 'change' );";
+
+			$val = "values: [ $( '#Inputfield_{$this->name}1' ).val(), $( '#Inputfield_{$this->name}2' ).val() ]";
+			$set = "$( '#RangeSlider_{$this->name}_display1' ).text( '$this->prefix' + $( '#RangeSlider_$this->name div' ).slider( 'values', 0 ) + '$this->suffix' );";
+			$set .= "$( '#RangeSlider_{$this->name}_display2' ).text( '$this->prefix' + $( '#RangeSlider_$this->name div' ).slider( 'values', 1 ) + '$this->suffix' );";
+
+		} else {
+			$out .= "<input type='hidden' name='{$this->name}' id='Inputfield_" . $this->name . "1' value='" . $value->min . "'/>";
+
+			$display = "$( '#RangeSlider_{$this->name}_display1' ).text( '$this->prefix' + ui.value + '$this->suffix');";
+
+			$constrain = "$( '#Inputfield_{$this->name}1' ).val( ui.value );";
+			// for change event checks
+			$constrain .= "$( '#Inputfield_{$this->name}1' ).trigger( 'change' );";
+
+			$val = "value: $( '#Inputfield_{$this->name}1' ).val()";
+			$set = 	"$( '#RangeSlider_{$this->name}_display1' ).text( '$this->prefix' + $( '#RangeSlider_$this->name div' ).slider( 'value' ) + '$this->suffix' );";
+
+		}
+
+		$width = $this->width;
+		$step = $this->step;
+
+		$out .= <<<_END
+<script>
+$(function(){
+	$( '#RangeSlider_$this->name div' ).slider({
+		$range
+		$val,
+		animate: true,
+		min: $min,
+		max: $max,
+		step: $step,
+		slide: function( event, ui ) {
+			$display
+			$constrain
+
+		}
+	});
+	$set
+});
+
+
+</script>
+<style>
+	#RangeSlider_$this->name > div { width:$width%!important; }
+</style>
+_END;
+
+		return $out;
+
+	}
+
+
+	public function ___processInput(WireInputData $input) {
+
+		$name = $this->attr('name');
+		$range = $this->attr('value');
+
+		if(isset($input->$name)) {
+			// check for changes in min value
+			if($range->min != $input->$name){
+				$range->set('min',$input->$name);
+				$this->trackChange('value');
+			}
+			// only if range is enabled
+			if($this->isrange){
+				if($range->max != $input["{$name}_max"]){
+					$range->set('max',$input["{$name}_max"]);
+					$this->trackChange('value');
+				}
+			}
+		}
+
+		return $this;
+	}
+
+}

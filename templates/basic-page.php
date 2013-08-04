@@ -1,11 +1,12 @@
-<?php 
+<?php
 
 /**
  * basic-page template
  *
  */
 
-include("./includes/defaults.inc"); 
+require_once('./includes/init.inc');
 
-include("./includes/main-view.inc"); 
+$content .= $page->body;
 
+require_once('./includes/view.inc');

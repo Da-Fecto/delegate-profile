@@ -1,0 +1,255 @@
+<?php
+
+/**
+ * ProcessWire Range Slider Fieldtype
+ * by "Soma" Philipp Urlich
+ *
+ * Field that stores two integer values.
+ *
+ * ProcessWire 2.x
+ * Copyright (C) 2010 by Ryan Cramer
+ * Licensed under GNU/GPL v2, see LICENSE.TXT
+ *
+ * http://www.processwire.com
+ * http://www.ryancramer.com
+ *
+ */
+
+class FieldtypeRangeSlider extends Fieldtype {
+
+	protected $defaults = array(
+		'defaultValue' => 0,
+		'width' => 100,
+		'minValue' => 0,
+		'maxValue' => 100,
+		'isrange' => 0,
+		'step' => 1
+		);
+
+
+	public static function getModuleInfo() {
+		return array(
+			'title' => __('Range Slider', __FILE__), // Module Title
+			'summary' => __('Field that stores integer values using jQuery UI slider.', __FILE__), // Module Summary
+			'version' => 103,
+			'installs' => 'InputfieldRangeSlider'
+		);
+	}
+
+	public function __construct() {
+		require_once(dirname(__FILE__) . '/RangeSlider.php');
+	}
+
+	/**
+	 * Format value for output
+	 *
+	 */
+	public function ___formatValue(Page $page, Field $field, $value) {
+		if($field->isrange) return $value;
+		// if single value return only data min so it can be accessed without using $field->min
+		return $value->min;
+	}
+
+	/**
+	 *
+	 * Add mapping to different name for use in page selectors
+	 * This enables to use it like "range.min=100, range.max<=200"
+	 */
+	public function getMatchQuery($query, $table, $subfield, $operator, $value) {
+		if($subfield == 'min') $subfield = 'data';
+		if($subfield == 'max') $subfield = 'data_max';
+		return parent::getMatchQuery($query, $table, $subfield, $operator, $value);
+	}
+
+	/**
+	 * get Inputfield for this fieldtype, set config attributes so they can be used in the inputfield
+	 *
+	 */
+	public function getInputfield(Page $page, Field $field) {
+		$inputfield = $this->modules->get('InputfieldRangeSlider');
+		$inputfield->set('isrange', $field->isrange ? 1 : 0);
+		$inputfield->set('width', $field->width ? $field->width : $this->defaults['width']);
+		$inputfield->set('defaultValue', (strlen(trim($field->defaultValue)) > 0) ? $field->defaultValue : $this->defaults['defaultValue']);
+		$inputfield->set('minValue', $field->minValue ? $field->minValue : $this->defaults['minValue']);
+		$inputfield->set('maxValue', $field->maxValue ? $field->maxValue : $this->defaults['maxValue']);
+		$inputfield->set('step', $field->step ? $field->step : $this->defaults['step']);
+		$inputfield->set('prefix', $field->prefix);
+		$inputfield->set('suffix', $field->suffix);
+		return $inputfield;
+	}
+
+	/**
+	 * there's none compatible
+	 *
+	 */
+	public function ___getCompatibleFieldtypes(Field $field) {
+		return null;
+	}
+
+	/**
+	 * blank value is an wiredata object RangeSlider
+	 *
+	 */
+	public function getBlankValue(Page $page, Field $field) {
+		$range = new RangeSlider();
+		return $range;
+	}
+
+	/**
+	 * Any value will get sanitized before setting it to a page object
+	 * and before saving the data
+	 *
+	 * If value not of instance RangeSlider return empty instance
+	 *
+	 * We also check if the value is empty and return defaultValue in case
+	 * it's not yet saved
+	 */
+	public function sanitizeValue(Page $page, Field $field, $value) {
+
+		if(!$value instanceof RangeSlider) $value = $this->getBlankValue($page, $field);
+
+		// report any changes to the field values
+		if($value->isChanged('min') || $value->isChanged('max')) $page->trackChange($field->name);
+
+		// handle default values if field values aren't yet saved in db
+
+		// if no defaultValue defined we don't need to go further
+		if(strlen($field->defaultValue) == 0) return $value;
+
+		// if not range slider return min value and if not set the defaultValue
+		if(!$field->isrange) {
+			$value->min = (!strlen($value->min)) ? $field->defaultValue : $value->min;
+			return $value;
+		}
+
+		// if range slider and empty values return the field default
+		if(empty($value->min) && empty($value->max)) {
+			$defaults = explode(",",$field->defaultValue);
+			if(count($defaults) < 2) {
+				$this->error("Default value should be in format [int,int]. (1,100) if range is checked");
+			} else {
+				$value->min = $defaults[0];
+				$value->max = $defaults[1];
+			}
+		}
+		return $value;
+	}
+
+	/**
+	 * get values converted when fetched from db
+	 *
+	 */
+	public function ___wakeupValue(Page $page, Field $field, $value) {
+
+		// get blank range
+		$range = $this->getBlankValue($page, $field);
+		// populate the range
+		$range->min = $value['data'];
+		$range->max = $value['data_max'];
+
+		return $range;
+	}
+
+	/**
+	 * return converted from object to array
+	 *
+	 */
+	public function ___sleepValue(Page $page, Field $field, $value) {
+
+		$range = $value;
+
+		// throw error if value is not of the right type
+		if(!$range instanceof RangeSlider)
+			throw new WireException("Expecting an instance of RangeSlider");
+
+		$sleepValue = array(
+			'data' => $range->min,
+			'data_max' => $range->max
+			);
+
+		return $sleepValue;
+	}
+
+
+	public function getDatabaseSchema(Field $field) {
+
+		$schema = parent::getDatabaseSchema($field);
+		$schema['data'] = 'int NOT NULL default 0'; // min
+		$schema['data_max'] = 'int NOT NULL default 0'; // max
+		$schema['keys']['data_range'] = 'KEY data_range(data,data_max)';
+		return $schema;
+	}
+
+	public function ___getConfigInputfields(Field $field) {
+
+		$inputfields = parent::___getConfigInputfields($field);
+
+		$f = $this->modules->get('InputfieldCheckbox');
+		$f->setAttribute('name', 'isrange');
+		$f->label = 'Range';
+		$f->setAttribute('checked', $field->isrange ? 'checked' : '' );
+		$f->setAttribute('value', 1 );
+		$f->description ='Enable range slider. Values will be saved as an object. You then use $value->min and $value->max for output.';
+		$inputfields->append($f);
+
+		$f = $this->modules->get('InputfieldInteger');
+		$f->setAttribute('name', 'width');
+		$f->label = 'Slider width';
+		$f->setAttribute('value', $field->width ? $field->width : $this->defaults['width'] );
+		$f->setAttribute('size', 20);
+		$f->description = 'Width of the slider in %.';
+		$inputfields->append($f);
+
+		$f = $this->modules->get('InputfieldText');
+		$f->setAttribute('name', 'defaultValue');
+		$f->label = 'Default Value';
+		$f->setAttribute('value', $field->defaultValue ? $field->defaultValue : $this->defaults['defaultValue']);
+		$f->setAttribute('size', 20);
+		$f->description = 'Set the default value. If slider is set to range you should specify two default values "," separated i.e. 1,100 ';
+		$inputfields->append($f);
+
+		$f = $this->modules->get('InputfieldInteger');
+		$f->setAttribute('name', 'minValue');
+		$f->label = 'Minimum Allowed Value';
+		$f->setAttribute('value', $field->minValue ? $field->minValue : $this->defaults['minValue']);
+		$f->setAttribute('size', 20);
+		$f->description = 'The smallest number allowed by this field.';
+		$inputfields->append($f);
+
+		$f = $this->modules->get('InputfieldInteger');
+		$f->attr('name', 'maxValue');
+		$f->label = 'Maximum Allowed Value';
+		$f->setAttribute('value', $field->maxValue ? $field->maxValue : $this->defaults['maxValue']);
+		$f->setAttribute('size', 20);
+		$f->description = 'The largest number allowed by this field.';
+		$inputfields->append($f);
+
+		$f = $this->modules->get('InputfieldInteger');
+		$f->attr('name', 'step');
+		$f->label = 'Step';
+		$f->setAttribute('value', $field->step ? $field->step : $this->defaults['step']);
+		$f->setAttribute('size', 20);
+		$f->description = 'Determines the size or amount of each interval or step the slider takes between min and max.';
+		$inputfields->append($f);
+
+		$f = $this->modules->get('InputfieldText');
+		$f->setAttribute('name', 'prefix');
+		$f->label = 'Counter Prefix';
+		$f->setAttribute('value', $field->prefix);
+		$f->setAttribute('size', 20);
+		$f->description = 'Added before display counter.';
+		$inputfields->append($f);
+
+		$f = $this->modules->get('InputfieldText');
+		$f->setAttribute('name', 'suffix');
+		$f->label = 'Counter Suffix';
+		$f->setAttribute('value', $field->suffix);
+		$f->setAttribute('size', 20);
+		$f->description = 'Added after display counter.';
+		$inputfields->append($f);
+
+		return $inputfields;
+	}
+
+}
+

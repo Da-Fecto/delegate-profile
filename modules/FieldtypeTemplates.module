@@ -1,0 +1,174 @@
+<?php
+
+/**
+ * ProcessWire Templates (plural) Fieldtype
+ * By Hani AbuGhazaleh
+ * Based off of FieldtypeModules by Ryan Cramer
+ *
+ * Field that stores reference to one or more templates.
+ * Uses asmSelect to make the selection sortable/searchable.
+ *
+ * ProcessWire 2.x 
+ * Copyright (C) 2012 by Ryan Cramer 
+ * Licensed under GNU/GPL v2, see LICENSE.TXT
+ * 
+ * http://www.processwire.com
+ * http://www.ryancramer.com
+ *
+ */
+class FieldtypeTemplates extends FieldtypeMulti {
+
+    public static function getModuleInfo() {
+        return array(
+            'title' => 'Templates Reference (multiple)',
+            'version' => 100,
+            'summary' => 'Field that stores a reference to one or more templates and makes them sortable.',
+            'permanent' => false,
+        );
+    }
+
+    public function getBlankValue(Page $page, Field $field) {
+        return array();
+    }
+
+    public function sanitizeValue(Page $page, Field $field, $value) {
+
+        if (!$value)
+            return null;
+        if (!is_array($value))
+            $value = array($value);
+
+        foreach ($value as $k => $v) {
+            // we allow integers
+            if (is_int($v) && $this->templates->get($v))
+                continue;
+
+            // we allow templates
+            if ($v instanceof Template)
+                continue;
+
+            // but we don't allow anything else
+            unset($value[$k]);
+        }
+
+        return $value;
+    }
+
+    public function ___wakeupValue(Page $page, Field $field, $value) {
+
+        $v = $this->getBlankValue($page, $field);
+
+        if (empty($value))
+            return $v;
+
+        foreach ($value as $templateID) {
+            $v[] = (int) $templateID;
+        }
+
+        return $v;
+    }
+
+    public function ___sleepValue(Page $page, Field $field, $value) {
+
+        $a = array();
+
+        foreach ($value as $template) {
+            if (is_int($template))
+                $templateID = $template;
+            else
+                $templateID = $this->fuel('templates')->get($template)->id;
+            $a[] = $templateID;
+        }
+
+        return $a;
+    }
+
+    /**
+     * Instantiate the templates
+     *
+     * This method is only used when $page->outputFormatting is true. 
+     *
+     */
+    public function ___formatValue(Page $page, Field $field, $value) {
+
+        foreach ($value as $k => $v) {
+            if (!is_int($v))
+                continue;
+            $template = $this->fuel('templates')->get($v);
+            if ($template) {
+                $value[$k] = $template;
+            } else {
+                unset($value[$k]);
+            }
+        }
+
+        return $value;
+    }
+
+    public function getInputfield(Page $page, Field $field) {
+
+        $inputfield = $this->modules->get('InputfieldAsmSelect');
+        $inputfield->attr('name', $field->name);
+
+        if (!empty($field->templateTypes)) {
+            $selector = "id=";
+
+            foreach ($field->templateTypes as $templateType) {
+                $selector .= $templateType . '|';
+            }
+            $selector = rtrim($selector, '|');
+            $templates = $this->fuel('templates')->find($selector);
+        } else {
+            $templates = $this->fuel('templates');
+        }
+
+        foreach ($templates as $template) {
+
+            $id = $template->id;
+            //$label = $template->name . ($template->label ? ' (' . $template->label . ')' : '');
+            $label = $template->label ? $template->label : $template->name;
+            
+            $inputfield->addOption($id, $label);
+        }
+
+        return $inputfield;
+    }
+
+    public function getDatabaseSchema(Field $field) {
+        $schema = parent::getDatabaseSchema($field);
+        $schema['data'] = 'int NOT NULL';
+        $schema['keys']['data'] = 'KEY data (data, pages_id, sort)';
+        return $schema;
+    }
+
+    public function ___getCompatibleFieldtypes(Field $field) {
+        $fieldtypes = new Fieldtypes();
+        return $fieldtypes;
+    }
+
+    public function ___getConfigInputfields(Field $field) {
+
+        $inputfields = parent::___getConfigInputfields($field);
+        $templateTypes = array();
+        $lastType = '';
+
+        $f = $this->modules->get("InputfieldCheckboxes");
+        $f->attr('name', 'templateTypes');
+
+        foreach ($this->templates as $template) {
+            if ($template->id == $lastType)
+                continue;
+            $f->addOption($template->id, $template->name . ($template->label ? ' (' . $template->label . ')' : ''));
+            $lastType = $template->id;
+        }
+
+        $f->attr('value', is_array($field->templateTypes) ? $field->templateTypes : array());
+        $f->label = "Template Types";
+        $f->description = "Check all of the templates that may be selectable in this field. If none are selected, then all types will be allowed.";
+        $inputfields->append($f);
+
+        return $inputfields;
+    }
+
+}
+

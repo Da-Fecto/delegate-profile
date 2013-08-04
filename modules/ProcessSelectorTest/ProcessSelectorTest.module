@@ -43,7 +43,7 @@ class ProcessSelectorTest extends Process {
 		return array(
 			'title'   => 'Selector test',
 			'summary' => 'Test selectors and explore page data and properties without editing a template file',
-			'version' => 110,
+			'version' => 111,
 			'author'  => 'Niklas Lakanen'
 		);
 	}
@@ -147,7 +147,8 @@ class ProcessSelectorTest extends Process {
 
 			// try to fetch results (exceptions are welcome and catched below)
 			$results = wire('pages')->find($selector);
-			$this->view->usedSelector = $selector;
+			// run selector through satinizer for viewing purposes
+			$this->view->usedSelector = wire('sanitizer')->entities($selector);
 
 			// generate the results table
 			$cnt = $results->getTotal();
@@ -316,12 +317,15 @@ class ProcessSelectorTest extends Process {
 	/**
 	 * Format all field values for display. Handles language-alternate and multi-language fields.
 	 *
+	 * TODO: wrap fields inside a fieldset to their own subtree
+	 *
 	 * @param Page $page Page object
 	 * @return array Array of displayable data
 	 *
 	 */
 	private function getPageFieldValues($page) {
-		$data = array();
+		// each array in data array represents a 'level' of fields (root / fieldsets)
+		$data = array(array());
 		// ensure output formatting is off (we want values as is and getting multilang values requires this)
 		$page->setOutputFormatting(false);
 		foreach($page->fields as $f) {
@@ -377,10 +381,28 @@ class ProcessSelectorTest extends Process {
 			// default: format the value here if this wasn't a multilang case of some sort
 			if(!$item) $item = $this->getPageFieldValue($f, $f->name, $page->$f);
 
-			$data[] = $item;
+			// end subtree if this was a FieldsetClose
+			if(preg_match('/FieldtypeFieldsetClose/', $f->type)) {
+				$children = array_pop($data);
+
+				// pop the opening item, adjust children and value and let the $item to be added again
+				$item = array_pop($data[count($data)-1]);
+				$item['children'] = $children;
+				$item['value'] = count($children);
+			}
+
+			// add the item to the tree
+			$data[count($data)-1][] = $item;
+
+			// create a new subtree if this was a FieldsetOpen of some sort
+			if(preg_match('/FieldtypeFieldset(Tab)?Open/', $f->type)) {
+				array_push($data, array());
+			}
 		}
 
-		return $data;
+		// first item is the 'root level'
+		// NOTE: if the template data is broken, this will be too (fieldset open/close pairs not matching)
+		return $data[0];
 	}
 
 	/*
@@ -549,23 +571,28 @@ class ProcessSelectorTest extends Process {
 	}
 
 	/**
-	 *	Get data for a given template
+	 *	Get data for a given template.
+	 *	Formed data is cached to boost things up as it's not that uncommon to hit several pages with the same template.
 	 *
 	 *	@param Template $tpl
 	 *	@return array Array of data for the template
 	 *
 	 */
 	private function getTemplateProperties($tpl) {
+		static $cache = array();
+
 		$data = array();
 		if($tpl->id) {
+			// was data for this template already formed? if so, use it!
+			if(array_key_exists($tpl->id, $cache)) return $cache[$tpl->id];
+
 			$fieldCount = count($tpl->fields);
 			$data = array(
-				array('key' => 'id',          'value' => $tpl->id),
-				array('key' => 'numPages',    'value' => $tpl->getNumPages()),
-				array('key' => 'urlSegments', 'value' => $tpl->urlSegments),
-				array('key' => 'noChildren',  'value' => $tpl->noChildren),
-				array('key' => 'noParents',   'value' => $tpl->noParents),
-				array('key' => 'altFilename', 'value' => $tpl->altFilename)
+				array('key' => 'id',         'value' => $tpl->id),
+				array('key' => 'numPages',   'value' => $tpl->getNumPages()),
+				array('key' => 'flags',      'value' => $this->flagsToString($tpl->flags, $this->getTemplateFlagMap())),
+				array('key' => 'cache_time', 'value' => $tpl->cache_time),
+				$this->arrayToTreeNode('data', $tpl->getArray())
 			);
 			$fieldsNode = array('key' => 'fields', 'value' => $fieldCount);
 			if($fieldCount) {
@@ -579,6 +606,9 @@ class ProcessSelectorTest extends Process {
 				}
 			}
 			$data[] = $fieldsNode;
+
+			// cache the result
+			$cache[$tpl->id] = $data;
 		}
 		return $data;
 	}
@@ -595,7 +625,8 @@ class ProcessSelectorTest extends Process {
 			array('key' => 'label',    'value' => $field->label),
 			array('key' => 'type',     'value' => "{$field->type}"),
 			array('key' => 'required', 'value' => $field->required),
-			array('key' => 'flags',    'value' => $this->flagsToString($field->flags, $this->getFieldFlagMap()))
+			array('key' => 'flags',    'value' => $this->flagsToString($field->flags, $this->getFieldFlagMap())),
+			$this->arrayToTreeNode('data', $field->getArray())
 		);
 
 		// show fields inside repeater fields as well
@@ -615,6 +646,35 @@ class ProcessSelectorTest extends Process {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Formats associative array for display with jqTree
+	 *
+	 * @param string $label Node label
+	 * @param array $data Associative array to format
+	 * @return array Node with given data
+	 *
+	 */
+	private function arrayToTreeNode($label, $data) {
+		$tree = array();
+		ksort($data);
+		foreach($data as $key => $value) {
+			$tree[] = array(
+				'key'   => $key,
+				'value' => $value
+			);
+		}
+
+		// constuct the node based on the count on keys in data array
+		// the same amount of items will be in the tree array
+		$ret = array(
+			'key' => $label,
+			'value' => sprintf($this->_n('[%d key]', '[%d keys]', count($tree)), count($tree))
+		);
+		if(count($tree)) $ret['children'] = $tree;
+
+		return $ret;
 	}
 
 	/**
@@ -669,6 +729,18 @@ class ProcessSelectorTest extends Process {
 			Page::statusHidden      => 'hidden',
 			Page::statusUnpublished => 'unpublished',
 			Page::statusTrash       => 'trash'
+		);
+	}
+
+	/**
+	 * Returns a mapping from template flag values to string representations
+	 *
+	 * @return array
+	 *
+	 */
+	private function getTemplateFlagMap() {
+		return array(
+			Template::flagSystem => 'system'
 		);
 	}
 

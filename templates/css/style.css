@@ -1,0 +1,57 @@
+/**
+ * Gumby fix
+ *
+ */
+
+.wrap980 {
+	max-width: 980px;
+	padding: 0 20px;
+	margin: 0 auto;
+}
+
+@media only screen and (max-width: 960px) {
+	.wrap980 {
+		padding: 0;
+	}
+}
+
+@media only screen and (max-width: 767px) {
+	.wrap980 {
+		padding: 0;
+	}
+}
+
+/**
+ * ProcessWire styles
+ *
+ */
+
+#edit {
+	position: fixed;
+	top: 1em;
+	right: 1em;
+}
+
+.align_left {
+        float: left;
+        margin: 0 1em 0.25em 0;
+}
+
+.align_right {
+        float: right;
+        margin: 0 0 0.25em 1em;
+}
+
+.align_center {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+}
+
+.WireFatalError {
+	background: #a30000;
+	color: #fff;
+	padding: 1em;
+	position: relative;
+	z-index: 9999;
+}
