@@ -1,0 +1,82 @@
+<?php
+
+/**
+ * JqueryCollagePlus
+ *
+ * Produces a nice grid output for ProcessWire's image selection.
+ * 
+ * ProcessWire 2.x 
+ * Copyright (C) 2013 by Ryan Cramer 
+ * Licensed under GNU/GPL v2, see LICENSE.TXT
+ * 
+ * http://processwire.com
+ *
+ */
+
+class JqueryCollagePlus extends WireData implements Module {
+
+	/**
+	 * getModuleInfo is a module required by all modules to tell ProcessWire about them
+	 *
+	 * @return array
+	 *
+	 */
+	public static function getModuleInfo() {
+
+		return array(
+			'title' => 'Collage Plus', 
+			'version' => 2, 
+			'summary' => 'Makes the image selection from rich text editors use a grid of images rather than stacked images.',
+			'singular' => true, 
+			'autoload' => "template=admin, process=ProcessPageEditImageSelect", // conditional autoload (PW 2.3.1+)
+			);
+	}
+
+	const collagePlusVersion = '0.3.1';
+
+	public function init() { }
+
+	/**
+	 * Attach our hook, if the right conditions are there
+	 *
+	 */
+	public function ready() {
+		$page = wire('page'); 
+		// this template/process check was actually performed in the 'autoload' of getModuleInfo()
+		// we perform it again here in case dealing with a version of PW prior to 2.3.1
+		if($page->template == 'admin' && $page->process == 'ProcessPageEditImageSelect') {
+			$this->addHookAfter('ProcessPageEditImageSelect::execute', $this, 'adminHook'); 
+		}
+
+	}
+
+	/**
+	 * What gets called after ProcessPageEditImageSelect::execute
+	 *
+	 */
+	protected function adminHook(HookEvent $event) {
+		$this->load(true);
+	}
+
+	/**
+	 * This function kept public in case you want to use this module elsewhere, 
+	 * you can just call the load() function and it will populate all the right
+	 * scripts in $config->scripts() and $config->styles();
+	 *
+	 * @param bool $admin True when used for hooks to ProcessPageEditImageSelect
+	 *
+	 */
+	public function load($admin = false) {
+		$config = wire('config'); 
+		$url = $config->urls->JqueryCollagePlus; 
+		$cpurl = $url . 'collagePlus-' . self::collagePlusVersion . '/';
+		$config->scripts->add($cpurl . 'jquery.collagePlus.js'); 
+		if($admin) {
+			$config->scripts->add($cpurl . 'extras/jquery.removeWhitespace.min.js'); 
+			$config->scripts->add($cpurl . 'extras/jquery.collageCaption.min.js'); 
+			$config->scripts->add($url . 'JqueryCollagePlus.js'); 
+			$config->styles->add($url . 'JqueryCollagePlus.css'); 
+		}
+		$config->styles->add($cpurl . 'css/transitions.css'); 
+	}
+}

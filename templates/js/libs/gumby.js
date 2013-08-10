@@ -22,39 +22,41 @@
 	function Gumby() {
 		this.$dom = $(document);
 		this.isOldie = !!this.$dom.find('html').hasClass('oldie');
+		this.click = 'click';
+		this.onReady = this.onOldie = this.onTouch = false;
 		this.uiModules = {};
 		this.inits = {};
-		this.onReady = false;
-		this.onOldie = false;
 
-		var scope = this;
+		// check and set path with js/libs default
+		this.path = $('script[gumby-path]').attr('gumby-path') || 'js/libs';
 
-		// when document ready call oldie callback
-		this.$dom.ready(function() {
-			if(scope.isOldie && scope.onOldie) {
-				scope.onOldie();
-			}
-		});
+		// check and set breakpoint with 1024 default
+		this.breakpoint = Number($('script[gumby-breakpoint]').attr('gumby-breakpoint')) || 1024;
 	}
 
 	// initialize Gumby
 	Gumby.prototype.init = function() {
-		// init UI modules
-		this.initUIModules();
+		var scope = this;
 
-		// call ready callback if available
-		if(this.onReady) {
-			this.onReady();
-		}
-	};
+		// call ready() code when dom is ready
+		this.$dom.ready(function() {
+			// init UI modules
+			scope.initUIModules();
 
-	// public helper - return debuggin object including uiModules object
-	Gumby.prototype.debug = function() {
-		return {
-			$dom: this.$dom,
-			isOldie: this.isOldie,
-			uiModules: this.uiModules
-		};
+			if(scope.onReady) {
+				scope.onReady();
+			}
+
+			// call oldie() callback if applicable
+			if(scope.isOldie && scope.onOldie) {
+				scope.onOldie();
+			}
+
+			// call touch() callback if applicable
+			if(Modernizr.touch && scope.onTouch) {
+				scope.onTouch();
+			}
+		});
 	};
 
 	// public helper - set Gumby ready callback
@@ -71,6 +73,23 @@
 		}
 	};
 
+	// public helper - set touch callback
+	Gumby.prototype.touch = function(code) {
+		if(code && typeof code === 'function') {
+			this.onTouch = code;
+		}
+	};
+
+	// public helper - return debuggin object including uiModules object
+	Gumby.prototype.debug = function() {
+		return {
+			$dom: this.$dom,
+			isOldie: this.isOldie,
+			uiModules: this.uiModules,
+			click: this.click
+		};
+	};
+
 	// grab attribute value, testing data- gumby- and no prefix
 	Gumby.prototype.selectAttr = function() {
 		var i = 0;
@@ -83,16 +102,16 @@
 				gumbyAttr = 'gumby-'+arguments[i];
 
 			// first test for data-attr
-			if(this.attr(dataAttr)) {
-				return this.attr(dataAttr);
+			if(this.is('['+dataAttr+']')) {
+				return this.attr(dataAttr) ? this.attr(dataAttr) : true;
 
 			// next test for gumby-attr
-			} else if(this.attr(gumbyAttr)) {
-				return this.attr(gumbyAttr);
+			} else if(this.is('['+gumbyAttr+']')) {
+				return this.attr(gumbyAttr) ? this.attr(gumbyAttr) : true;
 
 			// finally no prefix
-			} else if(this.attr(attr)) {
-				return this.attr(attr);
+			} else if(this.is('['+attr+']')) {
+				return this.attr(attr) ? this.attr(attr) : true;
 			}
 		}
 
@@ -106,9 +125,9 @@
 	};
 
 	// initialize a uiModule
-	Gumby.prototype.initialize = function(ref) {
+	Gumby.prototype.initialize = function(ref, all) {
 		if(this.inits[ref] && typeof this.inits[ref] === 'function') {
-			this.inits[ref]();
+			this.inits[ref](all);
 		}
 	};
 

@@ -29,6 +29,7 @@ if(is_file("{$config->paths->templates}css/{$page->template->name}.css")) {
 
 // JavaScripts
 $config->scripts->append("{$config->urls->templates}js/libs/gumby.min.js");
+$config->scripts->append("{$config->urls->templates}js/libs/ui/gumby.navbar.js");
 $config->scripts->append("{$config->urls->templates}js/plugins.js");
 $config->scripts->append("{$config->urls->templates}js/main.js");
 if(is_file("{$config->paths->templates}js/{$page->template->name}.js")) {
@@ -41,7 +42,7 @@ if(is_file("{$config->paths->templates}js/{$page->template->name}.js")) {
  */
 
 // Access to homepage
-$home = $pages->get("/");
+$home = $pages->get(1);
 // Title for title tag
 $browserTitle = $home === $page ? $home->get('headline|title') : "{$page->get('headline|title')} - {$home->get('headline|title')}";
 $content = ""; 

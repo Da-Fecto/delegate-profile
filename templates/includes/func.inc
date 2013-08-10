@@ -69,9 +69,39 @@ $numbers = array( null, 'one', 'two', 'three', 'four', 'five', 'six', 'seven', '
 	
 foreach($column as $key => $value) $column[$key] = $numbers[$value];
 
+
+/**
+ * Navigation
+ * 
+ * Full Options, 
+ */
+
+$options = array(
+    'parent_class' => 'parent', // string (default 'parent') overwrite class name for current parent levels
+    'current_class' => 'current', // string (default 'current') overwrite current class
+    'has_children_class' => 'folder', // string (default 'has_children') overwrite class name for entries with children
+    'levels' => false, // bool (default false) wether to output "level-1, level-2, ..." as css class in links
+    'levels_prefix' => 'level-', // bool (default 'level-') prefix string that will be used for level class
+    'max_levels' => 2, // int (default null) set the max level rendered
+    'firstlast' => true, // bool (default false) puts last,first class to link items
+    'collapsed' => false, // bool (default false) if you want to auto-collapse the tree you set this to true
+    'show_root' => true, // bool (default false) set this to true if you want to rootPage to get prepended to the menu
+    'selector' => '', // string (default '') define custom PW selector, you may sanitize values from user input
+    'outer_tpl' => '<ul class="eight columns">||</ul>', // template string for the outer most wrapper. || will contain entries
+    'inner_tpl' => '<div class="dropdown"><ul>||</ul></div>', // template string for inner wrappers. || will contain entries
+    'list_tpl' => '<li%s>||</li>', // template string for the items. || will contain entries, %s will replaced with class="..." string
+    'list_field_class' => '{template }', // string (default '') add custom classes to each list_tpl using tags like {field} i.e. {template} p_{id}
+    'item_tpl' => '<a href="{url}">{title}</a>', // template string for the inner items. Use {anyfield} and {url}, i.e. {headline|title}, if field is of type image it will return url to image (first image if multiple)
+    'item_current_tpl' => '<a href="{url}">{title}</a>', // template string for the current active inner items.
+    'xtemplates' => 'basic', // specify templates i.e. "folder|placeholder" for pages that need different output.
+    'xitem_tpl' => '<span>{title}</a>',
+    'xitem_current_tpl' => '<span>{title}</span>'
+);
+
+$nav = $modules->get("MarkupSimpleNavigation");
+$renderNav = $nav->render($options, $page, $home);
+
 /**
  *
  *
  */
-
-

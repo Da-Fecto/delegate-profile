@@ -43,12 +43,25 @@
 
 	<?=$modules->get('MarkupCSScompress')->render()?>
 
-   <script src="<?=$config->urls->templates ?>js/libs/modernizr-cust-2.6.2.min.js"></script>
+   <script src="<?=$config->urls->templates ?>js/libs/modernizr-2.6.2.min.js"></script>
 </head>
 <body class='<?=$page->template->name?>'>
 
-
 <div class="row">
+	<div class='columns twelve'>
+		<h2>Amet Egestas</h2>
+		<p>Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Nullam id dolor id nibh ultricies vehicula ut id elit. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Curabitur blandit tempus porttitor.</p>
+	</div>
+</div>
+
+<div class="navbar" id="main-nav" gumby-fixed="top">
+	<div class="row">
+		<a class="toggle" gumby-trigger="#main-nav > .row > ul" href="#"><i class="icon-menu"></i></a>
+		<?= $renderNav ?>
+	</div>
+</div>
+
+<div id="content" class="row">
 
 <?php 
 
@@ -101,10 +114,25 @@
 	
 </div>
 
-
 <!-- Grab Google CDN's jQuery, fall back to local if offline -->
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-<script>window.jQuery || document.write('<script src="<?=$config->urls->templates; ?>js/libs/jquery-1.9.1.min.js"><\/script>')</script>
+<!-- 2.0 for modern browsers, 1.10 for .oldie -->
+<script>
+	var oldieCheck = Boolean(document.getElementsByTagName('html')[0].className.match(/\soldie\s/g));
+	if(!oldieCheck) {
+		document.write('<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"><\/script>');
+	} else {
+		document.write('<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"><\/script>');
+	}
+</script>
+<script>
+if(!window.jQuery) {
+	if(!oldieCheck) {
+		document.write('<script src="js/libs/jquery-2.0.2.min.js"><\/script>');
+	} else {
+  		document.write('<script src="js/libs/jquery-1.10.1.min.js"><\/script>');
+	}
+}
+</script>
 
 <?php foreach($config->scripts->unique() as $file) echo "<script src='{$file}'></script>\n"; ?>
 

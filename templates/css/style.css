@@ -1,57 +1,104 @@
-/**
- * Gumby fix
- *
- */
-
-.wrap980 {
-	max-width: 980px;
-	padding: 0 20px;
-	margin: 0 auto;
-}
-
-@media only screen and (max-width: 960px) {
+/* Gumby 980px */
 	.wrap980 {
-		padding: 0;
+		max-width: 980px;
+		padding: 0 20px;
+		margin: 0 auto;
 	}
+
+	@media only screen and (max-width: 960px) {
+		.wrap980 {
+			padding: 0;
+		}
+	}
+
+	@media only screen and (max-width: 767px) {
+		.wrap980 {
+			padding: 0;
+		}
+	}
+
+/* images */
+	.p-100.align_left {
+		float: left;
+		margin: 0 0 1em 0;
+	}
+
+	.image {
+		position: relative;
+	}
+	.image a {
+		display: block;
+	}
+	/* images popup */
+		a .pop-up {
+			width: 100%;
+			height: 100%;
+			position: absolute;
+			background: #444;
+			top: 0;
+			opacity: 0;
+			text-align: center;
+			transition: all .5s ease-in-out;
+		}
+
+		a:hover .pop-up {
+			opacity: .7;
+		}
+
+		a .pop-up i {
+			font-size: 1em;
+			position: relative;
+			top: 50%;
+			transition: all .25s ease-in-out;
+		}
+
+		a:hover .pop-up i {
+			color: #FFF;
+			font-size: 4em;
+		}
+
+.navbar {
+
+	margin: 0;
+	padding: 0;
 }
 
-@media only screen and (max-width: 767px) {
-	.wrap980 {
-		padding: 0;
-	}
+.fixed.navbar {
+	position: fixed !important;
+	top: 0 !important;
 }
-
 /**
  * ProcessWire styles
  *
  */
 
-#edit {
-	position: fixed;
-	top: 1em;
-	right: 1em;
-}
+	#edit {
+		position: fixed;
+		top: 1em;
+		right: 1em;
+		z-index: 1000000; /* gumby fixed menu is 99999 */
+	}
 
-.align_left {
-        float: left;
-        margin: 0 1em 0.25em 0;
-}
+	.align_left {
+	    float: left;
+	    margin: 0 1em 0.25em 0;
+	}
 
-.align_right {
-        float: right;
-        margin: 0 0 0.25em 1em;
-}
+	.align_right {
+	    float: right;
+	    margin: 0 0 0.25em 1em;
+	}
 
-.align_center {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-}
+	.align_center {
+	    display: block;
+	    margin-left: auto;
+	    margin-right: auto;
+	}
 
-.WireFatalError {
-	background: #a30000;
-	color: #fff;
-	padding: 1em;
-	position: relative;
-	z-index: 9999;
-}
+	.WireFatalError {
+		background: #a30000;
+		color: #fff;
+		padding: 1em;
+		position: relative;
+		z-index: 9999;
+	}

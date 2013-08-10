@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * ProcessWire Gumby Ul list Textformatter
+ *
+ * Inserts class disc to UL's
+ * 
+ * ProcessWire 2.x 
+ * Copyright (C) 2010 by Ryan Cramer 
+ * Licensed under GNU/GPL v2, see LICENSE.TXT
+ * 
+ * http://www.processwire.com
+ * http://www.ryancramer.com
+ *
+ */
+
+class TextformatterGumbyList extends Textformatter {
+
+	public static function getModuleInfo() {
+		return array(
+			'title' => 'Gumby list formatter', 
+			'version' => 100, 
+			'summary' => "Convert <ul> to <ul class='disc'>", 
+		); 
+	}
+
+	public function format(&$str) {
+	
+	    $find = array(
+	        "<ul>",
+	        );
+	    $replace = array(
+	        "<ul class='disc'>",
+	        );
+	
+		$str = str_replace($find,$replace,$str);
+	}
+}
