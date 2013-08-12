@@ -1,6 +1,6 @@
 // Gumby is ready to go
 Gumby.ready(function() {
-	console.log('Gumby is ready to go...', Gumby.debug());
+	// console.log('Gumby is ready to go...', Gumby.debug());
 
 	// placeholder polyfil
 	if(Gumby.isOldie || Gumby.$dom.find('html').hasClass('ie9')) {
@@ -10,7 +10,7 @@ Gumby.ready(function() {
 
 // Oldie document loaded
 Gumby.oldie(function() {
-	console.log("This is an oldie browser...");
+	// console.log("This is an oldie browser...");
 });
 
 // Touch devices loaded
@@ -20,12 +20,33 @@ Gumby.touch(function() {
 
 // Document ready
 $(function() {
-	/* images helper */
-	$("a img").parent().append("<div class='pop-up'><i class='icon-popup'></i></div>");
+
+	/**
+	 * popup images helper
+	 *
+	 * Only load CSS & JS for images when needed.
+	 *
+	 */
+
+	if($("a img").length) {
+		Modernizr.load([{
+		    load: ['/site/templates/js/jquery.magnific-popup.min.js', '/site/templates/css/magnific-popup.css'],
+		    complete: function () {
+				$("a img").parent().append("<div class='pop-up'><i class='icon-popup'></i></div>").addClass("magnific");
+				$(".magnific").magnificPopup({
+			   		type: 'image', 
+			   		gallery: { enabled: true },
+			   		removalDelay: 300,
+					mainClass: 'popup-slide'
+			   	});
+		    }
+		 }]);
+	}
 
 	/* avoid navbar jumping */
 	var navHeight = $(".navbar").outerHeight();
 	$(window).scroll(function(){
+		$("#main-nav").removeAttr("style");
 		$("#content").removeAttr("style");
 		if($(".navbar").hasClass("fixed")) {
 			$("#content").css({"paddingTop" : navHeight });

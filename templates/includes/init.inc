@@ -15,7 +15,7 @@ $language = 'nl';
 
 // Strip out styles not belonging to the front-end
 foreach($config->styles->unique() as $file) {
-	if (stripos($file, $config->urls->templates) !== true) {
+	if (stripos($file, $config->urls->templates) === false) {
 		$config->styles->remove($file);
 	}
 }
